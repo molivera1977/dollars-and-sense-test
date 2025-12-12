@@ -1,6 +1,6 @@
-/**********************************************
-  MAIN SELECTORS & HELPERS
-**********************************************/
+/*************************************************
+  SHORTCUTS
+*************************************************/
 const $ = sel => document.querySelector(sel);
 const app = document.getElementById("app");
 
@@ -8,171 +8,215 @@ function shuffle(arr) {
   return arr.sort(() => Math.random() - 0.5);
 }
 
-/**********************************************
+/*************************************************
+  READ ALOUD + HIGHLIGHTING (FIXED)
+*************************************************/
+function readAloudWithHighlight(questionEl, choiceButtons) {
+  window.speechSynthesis.cancel();
+
+  const parts = [];
+
+  // Question first
+  parts.push({
+    el: questionEl,
+    text: questionEl.innerText
+  });
+
+  // Then each answer choice TEXT span
+  choiceButtons.forEach((btn, i) => {
+    const span = btn.querySelector(".choice-text");
+    parts.push({
+      el: span,
+      text: `Choice ${String.fromCharCode(65 + i)}. ${span.innerText}`
+    });
+  });
+
+  let index = 0;
+
+  function speakNext() {
+    if (index > 0) {
+      parts[index - 1].el.classList.remove("reading-highlight");
+    }
+
+    if (index >= parts.length) return;
+
+    const part = parts[index];
+    part.el.classList.add("reading-highlight");
+
+    const utterance = new SpeechSynthesisUtterance(part.text);
+    utterance.rate = 0.9;
+    utterance.pitch = 1;
+
+    utterance.onend = () => {
+      part.el.classList.remove("reading-highlight");
+      index++;
+      speakNext();
+    };
+
+    speechSynthesis.speak(utterance);
+  }
+
+  speakNext();
+}
+
+/*************************************************
   GLOBAL STATE
-**********************************************/
-let student = "";
+*************************************************/
+let studentName = "";
 let sections = [];
-let secIndex = 0;
-let selectedIndices = new Set();
+let sectionIndex = 0;
+let selected = new Set();
 
 let usedCodes = JSON.parse(localStorage.getItem("usedCodes") || "[]");
 
-/**********************************************
-  TEST CODES (DOLLARS AND SENSE)
-**********************************************/
-const validCodes = ["dollars101", "dollars102", "dollars103"];
+/*************************************************
+  TEST CODES
+*************************************************/
+const studentCodes = ["dollars101", "dollars102", "dollars103"];
 const teacherCode = "9377";
 
-/**********************************************
-  1. NAME SCREEN
-**********************************************/
+/*************************************************
+  START SCREEN
+*************************************************/
 function renderStart() {
   app.innerHTML = `
     <div class="card">
-      <h2>Enter Your Name to Begin</h2>
-      <input id="name" type="text" placeholder="Type your full name"/>
-      <button class="start-btn" id="go">Start Test</button>
+      <h2>Enter Your Name</h2>
+      <input id="studentName" type="text" placeholder="Full name">
+      <button class="start-btn" id="startBtn">Start</button>
     </div>
   `;
 
-  $("#go").onclick = () => {
-    student = $("#name").value.trim();
-    if (!student) return;
+  $("#startBtn").onclick = () => {
+    studentName = $("#studentName").value.trim();
+    if (!studentName) return;
     renderCodeScreen();
   };
 }
 
-/**********************************************
-  2. TEST CODE SCREEN
-**********************************************/
+/*************************************************
+  CODE SCREEN
+*************************************************/
 function renderCodeScreen() {
   app.innerHTML = `
     <div class="card">
       <h2>Enter Test Code</h2>
-      <input id="testcode" type="text" placeholder="Enter test code"/>
-      <button class="start-btn" id="codeGo">Submit Code</button>
+      <input id="codeInput" type="text" placeholder="Test code">
+      <button class="start-btn" id="codeBtn">Submit</button>
     </div>
   `;
 
-  $("#codeGo").onclick = () => {
-    let code = $("#testcode").value.trim().toLowerCase();
+  $("#codeBtn").onclick = () => {
+    const code = $("#codeInput").value.trim().toLowerCase();
     if (!code) return;
 
     if (code === teacherCode) {
-      initTest();
+      startTest();
       return;
     }
 
-    if (!validCodes.includes(code)) {
-      alert("That code is not right. Try again.");
+    if (!studentCodes.includes(code)) {
+      alert("Incorrect test code.");
       return;
     }
 
     if (usedCodes.includes(code)) {
-      alert("This code has already been used.");
+      alert("This test code has already been used.");
       return;
     }
 
     usedCodes.push(code);
     localStorage.setItem("usedCodes", JSON.stringify(usedCodes));
-
-    initTest();
+    startTest();
   };
 }
 
-/**********************************************
-  3. STARTING THE TEST
-**********************************************/
-function initTest() {
+/*************************************************
+  START TEST
+*************************************************/
+function startTest() {
   sections = [
-    { title: "Vocabulary",    data: shuffle(window.VOCAB_BANK), i: 0, correct: 0 },
-    { title: "Comprehension", data: shuffle(window.COMP_BANK),  i: 0, correct: 0 },
-    { title: "Cloze",         data: shuffle(window.CLOZE_BANK), i: 0, correct: 0 },
+    { title: "Vocabulary", data: shuffle([...VOCAB_BANK]), i: 0, correct: 0 },
+    { title: "Comprehension", data: shuffle([...COMP_BANK]), i: 0, correct: 0 },
+    { title: "Cloze", data: shuffle([...CLOZE_BANK]), i: 0, correct: 0 }
   ];
 
-  secIndex = 0;
-  renderQ();
+  sectionIndex = 0;
+  renderQuestion();
 }
 
-/**********************************************
-  HELPER – correct indexes
-**********************************************/
+/*************************************************
+  HELPERS
+*************************************************/
 function getCorrectIndexes(q) {
-  if (Array.isArray(q.answer)) return q.answer.slice();
-  if (Array.isArray(q.answers)) return q.answers.slice();
-  if (typeof q.answer === "number") return [q.answer];
-  return [];
+  if (Array.isArray(q.answer)) return q.answer;
+  return [q.answer];
 }
 
-/**********************************************
-  HELPER – multi-answer check
-**********************************************/
-function isMultiQuestion(q) {
+function isMulti(q) {
   const correct = getCorrectIndexes(q);
-  if (correct.length > 1) return true;
-
-  const txt = (q.q || "").toLowerCase();
-  if (
-    txt.includes("choose two") ||
-    txt.includes("pick two") ||
-    txt.includes("choose 2") ||
-    txt.includes("pick 2")
-  ) return true;
-
-  return false;
+  return correct.length > 1 || q.q.toLowerCase().includes("choose two");
 }
 
-/**********************************************
-  4. RENDER QUESTION
-**********************************************/
-function renderQ() {
-  let s = sections[secIndex];
-  let q = s.data[s.i];
-  selectedIndices.clear();
+/*************************************************
+  RENDER QUESTION
+*************************************************/
+function renderQuestion() {
+  selected.clear();
 
-  let total = s.data.length;
-  let num = s.i + 1;
-  let pct = Math.round((num / total) * 100);
-
+  const section = sections[sectionIndex];
+  const q = section.data[section.i];
+  const total = section.data.length;
+  const num = section.i + 1;
+  const percent = Math.round((num / total) * 100);
   const correct = getCorrectIndexes(q);
-  const multi = isMultiQuestion(q);
+  const multi = isMulti(q);
 
   app.innerHTML = `
     <div class="card">
       <div class="progress-container">
-        <div class="progress-text">${s.title} – Question ${num} of ${total}</div>
-        <div class="progress-bar" style="width:${pct}%"></div>
+        <div class="progress-text">
+          ${section.title} – Question ${num} of ${total}
+        </div>
+        <div class="progress-bar" style="width:${percent}%"></div>
       </div>
 
-      <p class="prompt">${q.q.replace(/\n/g, "<br>")}</p>
+      <p class="prompt" id="questionText">
+        ${q.q.replace(/\n/g, "<br>")}
+      </p>
+
+      <button class="read-btn" id="readBtn">
+        🔊 Read Question & Answers
+      </button>
+
       ${multi ? `<p class="multi-note">(Select ${correct.length} answers.)</p>` : ""}
 
       <div id="choices"></div>
 
-      <button class="submit" id="sub">Submit</button>
-      <button class="next" id="n" style="display:none">Next</button>
+      <button class="submit" id="submitBtn">Submit</button>
+      <button class="next" id="nextBtn" style="display:none">Next</button>
     </div>
   `;
 
-  q.choices.forEach((choice, index) => {
-    let btn = document.createElement("button");
+  $("#readBtn").onclick = () => {
+    const qEl = document.getElementById("questionText");
+    const choiceBtns = Array.from(document.querySelectorAll(".choice"));
+    readAloudWithHighlight(qEl, choiceBtns);
+  };
+
+  q.choices.forEach((choice, idx) => {
+    const btn = document.createElement("button");
     btn.className = "choice";
-    btn.textContent = choice;
+    btn.innerHTML = `<span class="choice-text">${choice}</span>`;
 
     btn.onclick = () => {
       if (multi) {
-        if (selectedIndices.has(index)) {
-          selectedIndices.delete(index);
-          btn.classList.remove("selected");
-        } else {
-          selectedIndices.add(index);
-          btn.classList.add("selected");
-        }
+        btn.classList.toggle("selected");
+        selected.has(idx) ? selected.delete(idx) : selected.add(idx);
       } else {
-        selectedIndices.clear();
-        selectedIndices.add(index);
+        selected.clear();
         document.querySelectorAll(".choice").forEach(b => b.classList.remove("selected"));
+        selected.add(idx);
         btn.classList.add("selected");
       }
     };
@@ -180,92 +224,74 @@ function renderQ() {
     $("#choices").appendChild(btn);
   });
 
-  $("#sub").onclick = submitAnswer;
-  $("#n").onclick = nextQ;
+  $("#submitBtn").onclick = submitAnswer;
+  $("#nextBtn").onclick = nextQuestion;
 }
 
-/**********************************************
-  5. SUBMIT ANSWER
-**********************************************/
+/*************************************************
+  SUBMIT ANSWER
+*************************************************/
 function submitAnswer() {
-  if (selectedIndices.size === 0) return;
+  if (selected.size === 0) return;
 
-  let s = sections[secIndex];
-  let q = s.data[s.i];
+  const section = sections[sectionIndex];
+  const q = section.data[section.i];
   const correct = new Set(getCorrectIndexes(q));
 
   document.querySelectorAll(".choice").forEach((btn, idx) => {
-    if (correct.has(idx)) {
-      btn.classList.add("correct");
-    }
-    if (selectedIndices.has(idx) && !correct.has(idx)) {
-      btn.classList.add("wrong");
-    }
+    if (correct.has(idx)) btn.classList.add("correct");
+    if (selected.has(idx) && !correct.has(idx)) btn.classList.add("wrong");
     btn.disabled = true;
   });
 
-  let isCorrect =
-    selectedIndices.size === correct.size &&
-    [...selectedIndices].every(i => correct.has(i));
+  const isCorrect =
+    selected.size === correct.size &&
+    [...selected].every(i => correct.has(i));
 
-  if (isCorrect) s.correct++;
+  if (isCorrect) section.correct++;
 
-  $("#sub").style.display = "none";
-  $("#n").style.display = "inline-block";
+  $("#submitBtn").style.display = "none";
+  $("#nextBtn").style.display = "inline-block";
 }
 
-/**********************************************
-  6. NEXT QUESTION
-**********************************************/
-function nextQ() {
-  let s = sections[secIndex];
-  s.i++;
+/*************************************************
+  NEXT QUESTION
+*************************************************/
+function nextQuestion() {
+  const section = sections[sectionIndex];
+  section.i++;
 
-  if (s.i >= s.data.length) {
-    secIndex++;
-    if (secIndex >= sections.length) {
-      return renderResults();
+  if (section.i >= section.data.length) {
+    sectionIndex++;
+    if (sectionIndex >= sections.length) {
+      renderResults();
+      return;
     }
   }
 
-  renderQ();
+  renderQuestion();
 }
 
-/**********************************************
-  7. RESULTS PAGE
-**********************************************/
+/*************************************************
+  RESULTS
+*************************************************/
 function renderResults() {
-  let output = `
+  let html = `
     <div class="card">
-      <h2>Test Results for ${student}</h2>
+      <h2>Test Results</h2>
+      <p><strong>${studentName}</strong></p>
   `;
 
   sections.forEach(sec => {
-    let total = sec.data.length;
-    let pct = Math.round((sec.correct / total) * 100);
-
-    let grade =
-      pct >= 97 ? "A+" :
-      pct >= 93 ? "A"  :
-      pct >= 90 ? "A−" :
-      pct >= 87 ? "B+" :
-      pct >= 83 ? "B"  :
-      pct >= 80 ? "B−" :
-      pct >= 77 ? "C+" :
-      pct >= 73 ? "C"  :
-      pct >= 70 ? "C−" :
-      pct >= 67 ? "D+" :
-      pct >= 63 ? "D"  :
-      pct >= 60 ? "D−" : "F";
-
-    output += `<p>${sec.title}: ${sec.correct}/${total} (${pct}%) – ${grade}</p>`;
+    const percent = Math.round((sec.correct / sec.data.length) * 100);
+    html += `<p>${sec.title}: ${sec.correct}/${sec.data.length} (${percent}%)</p>`;
   });
 
-  output += `</div>`;
-  app.innerHTML = output;
+  html += `</div>`;
+  app.innerHTML = html;
 }
 
-/**********************************************
-  START APP
-**********************************************/
+/*************************************************
+  INIT
+*************************************************/
 renderStart();
