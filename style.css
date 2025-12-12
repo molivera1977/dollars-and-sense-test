@@ -1,0 +1,237 @@
+/* =========================================================
+   DOLLARS AND SENSE TEST PALETTE
+   ========================================================= */
+:root {
+  --blue: #00578a;
+  --green: #008b4a;
+  --accent: #f4c542;
+  --soft: #e1f5f3;
+  --black: #123047;
+  --correct: #2e7d32;
+  --wrong: #c62828;
+  --white: #ffffff;
+}
+
+/* =========================================================
+   GLOBAL PAGE STYLING
+   ========================================================= */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Comic Sans MS", "Comic Neue", sans-serif;
+  background: var(--soft);
+  color: var(--black);
+}
+
+#app {
+  max-width: 900px;
+  margin: 30px auto;
+  padding: 20px;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+.header {
+  background: linear-gradient(to right, var(--blue), var(--green));
+  padding: 24px 0 36px 0;
+  text-align: center;
+  color: #fff;
+  position: relative;
+}
+
+/* HEADER LOGO IMAGES – FULL IMAGE, NO CROPPING */
+.header-img {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+
+  width: 170px;
+  height: auto;
+  object-fit: contain;
+
+  background: white;
+  padding: 10px;
+  border-radius: 14px;
+
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+}
+
+.header-img.left {
+  left: 18px;
+}
+
+.header-img.right {
+  right: 18px;
+}
+
+.header h1 {
+  margin: 0 auto;
+  max-width: 560px;
+  font-size: 32px;
+  line-height: 1.25;
+}
+
+/* =========================================================
+   HEADER TABS (DISABLED FOR TEST)
+   ========================================================= */
+.tabs {
+  margin-top: 20px;
+}
+
+.tab {
+  background: var(--accent);
+  padding: 12px 26px;
+  border-radius: 24px;
+  border: 2px solid white;
+  margin: 6px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: default;
+  opacity: 0.9;
+}
+
+/* =========================================================
+   CARD (MAIN CONTENT)
+   ========================================================= */
+.card {
+  background: var(--white);
+  border-radius: 22px;
+  padding: 32px 28px 38px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+  border-top: 6px solid var(--blue);
+}
+
+.card h2 {
+  margin-top: 0;
+  text-align: center;
+  font-size: 28px;
+}
+
+/* =========================================================
+   PROGRESS BAR
+   ========================================================= */
+.progress-container {
+  width: 100%;
+  margin-bottom: 18px;
+}
+
+.progress-text {
+  margin-bottom: 6px;
+  font-weight: bold;
+}
+
+.progress-bar {
+  width: 0%;
+  height: 14px;
+  background: linear-gradient(to right, var(--accent), var(--green));
+  border-radius: 12px;
+  transition: width 0.3s ease;
+}
+
+/* =========================================================
+   ANSWER CHOICES
+   ========================================================= */
+.choice {
+  display: block;
+  width: 100%;
+  margin: 12px 0;
+  padding: 14px 16px;
+  font-size: 18px;
+  border-radius: 14px;
+  border: 2px solid var(--blue);
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.choice:hover {
+  transform: scale(1.01);
+}
+
+.choice.selected {
+  outline: 3px solid var(--black);
+}
+
+.choice.correct {
+  background: var(--correct) !important;
+  border-color: var(--correct) !important;
+  color: white !important;
+}
+
+.choice.wrong {
+  background: var(--wrong) !important;
+  border-color: var(--wrong) !important;
+  color: white !important;
+}
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+.submit,
+.next,
+.start-btn {
+  border: none;
+  border-radius: 22px;
+  padding: 12px 28px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 22px;
+}
+
+.start-btn,
+.submit {
+  background: var(--blue);
+  color: #fff;
+}
+
+.next {
+  background: var(--accent);
+  color: var(--black);
+}
+
+/* =========================================================
+   INPUTS
+   ========================================================= */
+input[type="text"] {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 18px;
+  border-radius: 14px;
+  border: 2px solid var(--blue);
+  margin-bottom: 12px;
+}
+
+/* =========================================================
+   RESULTS
+   ========================================================= */
+.card p {
+  font-size: 22px;
+  margin: 14px 0;
+}
+
+/* =========================================================
+   RESPONSIVE FIXES
+   ========================================================= */
+@media (max-width: 900px) {
+  .header-img {
+    width: 130px;
+  }
+
+  .header h1 {
+    font-size: 26px;
+  }
+}
+
+@media (max-width: 650px) {
+  .header-img {
+    display: none;
+  }
+
+  .header h1 {
+    font-size: 24px;
+    padding: 0 12px;
+  }
+}
