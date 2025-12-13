@@ -30,54 +30,75 @@ body {
 }
 
 /* =========================================================
-   HEADER
+   HEADER (MOBILE FRIENDLY FIX)
    ========================================================= */
 .header {
   background: linear-gradient(to right, var(--blue), var(--green));
-  padding: 20px 0 32px 0;
+  padding: 20px;
   text-align: center;
   color: #fff;
-  position: relative;
+}
+
+/* Using Flexbox to stack items on mobile and spread them on desktop */
+.header-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  max-width: 1000px;
+  margin: 0 auto;
 }
 
 .header-img {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 170px;
+  width: 120px;
   height: auto;
   object-fit: contain;
   background: white;
-  padding: 10px;
+  padding: 8px;
   border-radius: 14px;
   box-shadow: 0 3px 10px rgba(0,0,0,0.4);
 }
 
-.header-img.left { left: 15px; }
-.header-img.right { right: 15px; }
-
 .header h1 {
-  margin: 0 auto;
-  max-width: 520px;
-  font-size: 30px;
+  margin: 0;
+  font-size: 28px;
   line-height: 1.2;
 }
 
+/* Tablet and Desktop Layout: Switch to Row */
+@media (min-width: 768px) {
+  .header-content {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  
+  .header h1 {
+    font-size: 36px;
+    flex-grow: 1;
+    padding: 0 20px;
+  }
+}
+
 /* =========================================================
-   HEADER TABS (disabled)
+   HEADER TABS
    ========================================================= */
 .tabs {
   margin-top: 18px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .tab {
   background: var(--accent);
-  padding: 10px 22px;
+  padding: 8px 18px;
   border-radius: 20px;
   border: 2px solid white;
-  margin: 6px;
-  font-size: 18px;
+  font-size: 16px;
   cursor: default;
+  color: var(--black);
+  font-weight: bold;
 }
 
 /* =========================================================
@@ -143,14 +164,12 @@ body {
   background: #e0f2ff;
 }
 
-/* READ ALOUD HIGHLIGHTING */
 .reading-highlight {
   background: #fff3cd;
   border-radius: 6px;
   padding: 2px 4px;
   display: inline;
 }
-
 
 /* =========================================================
    MULTI-ANSWER NOTE
@@ -161,7 +180,7 @@ body {
 }
 
 /* =========================================================
-   ANSWER CHOICES
+   ANSWER CHOICES & ACCESSIBILITY
    ========================================================= */
 .choice {
   display: block;
@@ -174,10 +193,24 @@ body {
   background: #fff;
   cursor: pointer;
   text-align: left;
+  transition: background 0.2s;
+}
+
+/* High contrast focus ring for keyboard navigation */
+.choice:focus-visible, 
+button:focus-visible, 
+input:focus-visible {
+  outline: 4px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.choice:hover {
+  background: #f0f8ff;
 }
 
 .choice.selected {
   outline: 3px solid var(--black);
+  background: #e3f2fd;
 }
 
 .choice.correct {
@@ -205,6 +238,11 @@ body {
   font-weight: bold;
   cursor: pointer;
   margin-top: 20px;
+  width: 100%;
+  max-width: 200px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .start-btn,
@@ -227,6 +265,7 @@ input[type="text"] {
   font-size: 18px;
   border-radius: 10px;
   border: 2px solid var(--blue);
+  box-sizing: border-box; /* Fixes padding overflow */
 }
 
 /* =========================================================
