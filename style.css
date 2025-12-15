@@ -39,7 +39,6 @@ body {
   color: #fff;
 }
 
-/* Using Flexbox to stack items on mobile and spread them on desktop */
 .header-content {
   display: flex;
   flex-direction: column;
@@ -164,11 +163,19 @@ body {
   background: #e0f2ff;
 }
 
+/* Standard Highlight (Fallback) */
 .reading-highlight {
   background: #fff3cd;
   border-radius: 6px;
   padding: 2px 4px;
   display: inline;
+}
+
+/* NEW: Word-by-Word Highlight */
+.highlight-word {
+  background-color: var(--accent);
+  border-radius: 4px;
+  box-shadow: 0 0 5px rgba(244, 197, 66, 0.5);
 }
 
 /* =========================================================
@@ -196,7 +203,6 @@ body {
   transition: background 0.2s;
 }
 
-/* High contrast focus ring for keyboard navigation */
 .choice:focus-visible, 
 button:focus-visible, 
 input:focus-visible {
@@ -265,7 +271,7 @@ input[type="text"] {
   font-size: 18px;
   border-radius: 10px;
   border: 2px solid var(--blue);
-  box-sizing: border-box; /* Fixes padding overflow */
+  box-sizing: border-box; 
 }
 
 /* =========================================================

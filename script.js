@@ -9,14 +9,9 @@ const app = document.getElementById("app");
 *************************************************/
 function shuffle(array) {
   let currentIndex = array.length, randomIndex;
-  
-  // While there remain elements to shuffle...
   while (currentIndex != 0) {
-    // Pick a remaining element...
     randomIndex = Math.floor(Math.random() * currentIndex);
     currentIndex--;
-
-    // And swap it with the current element.
     [array[currentIndex], array[randomIndex]] = [
       array[randomIndex], array[currentIndex]];
   }
@@ -24,53 +19,79 @@ function shuffle(array) {
 }
 
 /*************************************************
-  READ ALOUD + HIGHLIGHTING
+  NEW READ ALOUD (WORD-BY-WORD HIGHLIGHTING)
 *************************************************/
 function readAloudWithHighlight(questionEl, choiceButtons) {
+  // 1. Stop any current speaking
   window.speechSynthesis.cancel();
 
+  // 2. Build the list of things to read
   const parts = [];
 
-  // Question first
+  // Add Question
   parts.push({
     el: questionEl,
-    text: questionEl.innerText
+    text: questionEl.innerText,
+    originalHTML: questionEl.innerHTML // Save original formatting
   });
 
-  // Then each answer choice TEXT span
+  // Add Answer Choices (Targeting the span inside the button)
   choiceButtons.forEach((btn, i) => {
     const span = btn.querySelector(".choice-text");
     parts.push({
       el: span,
-      text: `Choice ${String.fromCharCode(65 + i)}. ${span.innerText}`
+      text: `Choice ${String.fromCharCode(65 + i)}. ${span.innerText}`,
+      originalHTML: span.innerHTML
     });
   });
 
   let index = 0;
 
   function speakNext() {
-    if (index > 0) {
-      parts[index - 1].el.classList.remove("reading-highlight");
-    }
-
+    // If we are done with all parts, stop.
     if (index >= parts.length) return;
 
     const part = parts[index];
-    part.el.classList.add("reading-highlight");
-
+    
+    // Create the speech object
     const utterance = new SpeechSynthesisUtterance(part.text);
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
+    utterance.rate = 0.9; 
+    
+    // --- WORD HIGHLIGHTING LOGIC ---
+    utterance.onboundary = (event) => {
+      if (event.name === 'word') {
+        const charIndex = event.charIndex;
+        const textLen = part.text.length;
+        
+        // Find end of current word
+        let nextSpace = part.text.indexOf(' ', charIndex + 1);
+        if (nextSpace === -1) nextSpace = textLen;
+        
+        // Split text
+        // NOTE: We replace newlines (\n) with <br> so paragraphs don't collapse
+        const before = part.text.substring(0, charIndex).replace(/\n/g, "<br>");
+        const word = part.text.substring(charIndex, nextSpace);
+        const after = part.text.substring(nextSpace).replace(/\n/g, "<br>");
 
+        // Inject the highlight span
+        part.el.innerHTML = `${before}<span class="highlight-word">${word}</span>${after}`;
+      }
+    };
+
+    // When this part finishes...
     utterance.onend = () => {
-      part.el.classList.remove("reading-highlight");
+      // 1. Restore original clean text
+      part.el.innerHTML = part.originalHTML;
+      // 2. Move to next part
       index++;
       speakNext();
     };
 
-    speechSynthesis.speak(utterance);
+    // Start speaking
+    window.speechSynthesis.speak(utterance);
   }
 
+  // Kick off the loop
   speakNext();
 }
 
@@ -93,7 +114,6 @@ const teacherCode = "9377";
   START SCREEN & PERSISTENCE CHECK
 *************************************************/
 function renderStart() {
-  // Check if there is a saved test in progress
   const savedState = localStorage.getItem("dollars_progress");
   
   let resumeBtnHTML = "";
@@ -113,7 +133,6 @@ function renderStart() {
   $("#startBtn").onclick = () => {
     studentName = $("#studentName").value.trim();
     if (!studentName) return;
-    // If starting new, clear old progress
     localStorage.removeItem("dollars_progress");
     renderCodeScreen();
   };
@@ -251,12 +270,9 @@ function renderQuestion() {
   };
 
   // SHUFFLE ANSWER CHOICES LOGIC
-  // 1. Create an array of indices [0, 1, 2, 3...]
   let choiceIndices = q.choices.map((_, i) => i);
-  // 2. Shuffle the indices
   choiceIndices = shuffle(choiceIndices);
 
-  // 3. Create buttons in the shuffled order
   choiceIndices.forEach((originalIndex) => {
     const choiceText = q.choices[originalIndex];
     
@@ -264,11 +280,10 @@ function renderQuestion() {
     btn.className = "choice";
     btn.innerHTML = `<span class="choice-text">${choiceText}</span>`;
     
-    // Store original index for checking answer later
     btn.dataset.index = originalIndex;
 
     btn.onclick = () => {
-      if (btn.disabled) return; // Prevent clicking after submit
+      if (btn.disabled) return; 
       
       if (multi) {
         btn.classList.toggle("selected");
@@ -299,7 +314,7 @@ function submitAnswer() {
   const correct = new Set(getCorrectIndexes(q));
 
   document.querySelectorAll(".choice").forEach((btn) => {
-    const idx = parseInt(btn.dataset.index); // Get the original index back
+    const idx = parseInt(btn.dataset.index); 
 
     if (correct.has(idx)) btn.classList.add("correct");
     if (selected.has(idx) && !correct.has(idx)) btn.classList.add("wrong");
@@ -312,12 +327,11 @@ function submitAnswer() {
 
   if (isCorrect) section.correct++;
 
-  // Save progress after answering
   saveProgress();
 
   $("#submitBtn").style.display = "none";
   $("#nextBtn").style.display = "inline-block";
-  $("#nextBtn").focus(); // Accessibility focus
+  $("#nextBtn").focus(); 
 }
 
 /*************************************************
@@ -343,7 +357,6 @@ function nextQuestion() {
   RESULTS
 *************************************************/
 function renderResults() {
-  // Clear saved progress since test is done
   localStorage.removeItem("dollars_progress");
 
   let totalCorrect = 0;
@@ -365,7 +378,6 @@ function renderResults() {
   html += `</div>`;
   app.innerHTML = html;
 
-  // CONFETTI REWARD
   const totalPercent = (totalCorrect / totalQuestions) * 100;
   if (totalPercent >= 70) {
     launchConfetti();
@@ -383,7 +395,7 @@ function launchConfetti() {
         angle: 60,
         spread: 55,
         origin: { x: 0 },
-        colors: ['#00578a', '#008b4a', '#f4c542'] // Brand colors
+        colors: ['#00578a', '#008b4a', '#f4c542'] 
       });
       confetti({
         particleCount: 5,
